@@ -134,7 +134,7 @@ def ensure_wifi(
 
             _status_screen("WiFi", f"{SPINNER_FRAMES[frame]}")
             frame = (frame + 1) % len(SPINNER_FRAMES)
-            time.sleep(0.12)
+            time.sleep(0.01)
 
             if time.ticks_diff(time.ticks_ms(), att_start) >= timeout_ms_per_attempt:
                 break

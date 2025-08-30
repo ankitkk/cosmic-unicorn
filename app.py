@@ -11,7 +11,7 @@ from config import (
     WEATHER_SCREEN_SECONDS, CTA_SCREEN_SECONDS,
     TRANSITION_MS, FRAME_DELAY, CTA_BRIGHTNESS_FACTOR,
     DISPLAY_WIDTH,
-    MORNING_WEATHER_START_HOUR, MORNING_WEATHER_END_HOUR, MORNING_WEATHER_MULTIPLIER,
+    MORNING_CTA_START_HOUR, MORNING_CTA_END_HOUR, MORNING_CTA_MULTIPLIER,
 )
 
 # not in git
@@ -149,20 +149,22 @@ def main():
                 pass
             _last_ntp_ping_ms = now_ms
 
-        # Rotate screens
+        # Rotate screens (CTA lasts longer in the morning window)
+        tz_off = weather_cache.get("tz_offset_seconds", 0) or 0
+        local_secs = time.time() + tz_off
+        hh = time.gmtime(local_secs)[3]
+
         if mode == MODE_WEATHER:
-            # Extend weather screen in the morning window
-            # Determine local hour using tz offset (from weather)
-            tz_off = weather_cache.get("tz_offset_seconds", 0) or 0
-            local_secs = time.time() + tz_off
-            hh = time.gmtime(local_secs)[3]
-            weather_secs = WEATHER_SCREEN_SECONDS
-            if MORNING_WEATHER_START_HOUR <= hh < MORNING_WEATHER_END_HOUR:
-                weather_secs = int(WEATHER_SCREEN_SECONDS * MORNING_WEATHER_MULTIPLIER)
-            if time.ticks_diff(now_ms, last_mode_switch_ms) >= weather_secs * 1000:
+            # Weather uses its normal duration
+            if time.ticks_diff(now_ms, last_mode_switch_ms) >= WEATHER_SCREEN_SECONDS * 1000:
                 _set_transition(MODE_CTA, now_ms)
+
         elif mode == MODE_CTA:
-            if time.ticks_diff(now_ms, last_mode_switch_ms) >= CTA_SCREEN_SECONDS * 1000:
+            # CTA gets extended duration during morning commute window
+            cta_secs = CTA_SCREEN_SECONDS
+            if MORNING_CTA_START_HOUR <= hh < MORNING_CTA_END_HOUR:
+                cta_secs = int(CTA_SCREEN_SECONDS * MORNING_CTA_MULTIPLIER)
+            if time.ticks_diff(now_ms, last_mode_switch_ms) >= cta_secs * 1000:
                 _set_transition(MODE_WEATHER, now_ms)
 
         # Poll WEATHER (only if showing Weather soon/recently)
