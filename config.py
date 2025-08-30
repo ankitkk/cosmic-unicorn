@@ -2,7 +2,6 @@
 # Central configuration for timing, display, and data sources.
 
 # ---- CTA ----
-CTA_API_KEY = "dXbfpRPHTUYqhk4RfW7m7j4Gz"
 ROWS = [
     {"stpid": "8844", "rt": "50", "dir_label": "S", "rtdir": "Southbound", "color": (0, 255, 255)},  # 50 Southbound
     {"stpid": "4100", "rt": "73", "dir_label": "W", "rtdir": "Westbound",  "color": (255, 255, 0)},  # 73 Westbound
@@ -57,3 +56,9 @@ THEME_CHECK_MS = 10000  # recompute blend about every 10s
 
 # ---- Spinner frames for Wi-Fi status ----
 SPINNER_FRAMES = ["|", "/", "-", "\\"]
+
+# ---- Morning weather preference ----
+# Between these hours (local), show weather screen longer
+MORNING_WEATHER_START_HOUR = 8
+MORNING_WEATHER_END_HOUR = 11
+MORNING_WEATHER_MULTIPLIER = 2.0

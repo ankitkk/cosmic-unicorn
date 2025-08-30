@@ -17,6 +17,12 @@ TIME_RGB = THEMES["day"]["time"]
 HL_RGB   = THEMES["day"]["hl"]
 _base_brightness = THEMES["day"].get("brightness", 0.5)
 
+# Cached pens to avoid re-creating every frame
+_TIME_PEN = None
+_HL_PEN = None
+_last_time_rgb = None
+_last_hl_rgb = None
+
 
 def set_tz_offset(sec):
     """Set local timezone offset in seconds (from weather API)."""
@@ -41,6 +47,16 @@ def _mix_rgb(c1, c2, t):
     g = int(c1[1] + (c2[1] - c1[1]) * t)
     b = int(c1[2] + (c2[2] - c1[2]) * t)
     return (_clamp(r, 0, 255), _clamp(g, 0, 255), _clamp(b, 0, 255))
+
+
+def _ensure_pens(make_pen_func):
+    global _TIME_PEN, _HL_PEN, _last_time_rgb, _last_hl_rgb
+    if _TIME_PEN is None or _last_time_rgb != TIME_RGB:
+        _TIME_PEN = make_pen_func(TIME_RGB)
+        _last_time_rgb = TIME_RGB
+    if _HL_PEN is None or _last_hl_rgb != HL_RGB:
+        _HL_PEN = make_pen_func(HL_RGB)
+        _last_hl_rgb = HL_RGB
 
 
 def temp_to_color_f(temp_f, white=(180, 180, 180)):
@@ -115,7 +131,8 @@ def update_theme(wx, make_pen, force=False):
 
     now_ms = time.ticks_ms()
     if not force and time.ticks_diff(now_ms, _last_theme_check_ms) < THEME_CHECK_MS:
-        return (make_pen(TIME_RGB), make_pen(HL_RGB), _base_brightness)
+        _ensure_pens(make_pen)
+        return (_TIME_PEN, _HL_PEN, _base_brightness)
     _last_theme_check_ms = now_ms
 
     # Local time
@@ -144,7 +161,8 @@ def update_theme(wx, make_pen, force=False):
             HL_RGB   = _mix_rgb(night_cfg["hl"],   day_cfg["hl"],   k)
             _base_brightness = night_cfg["brightness"] + (day_cfg["brightness"] - night_cfg["brightness"]) * k
             _current_theme = "dawn"
-            return (make_pen(TIME_RGB), make_pen(HL_RGB), _base_brightness)
+            _ensure_pens(make_pen)
+            return (_TIME_PEN, _HL_PEN, _base_brightness)
 
     # Blend near sunset (day→night)
     if ss_min is not None:
@@ -155,7 +173,8 @@ def update_theme(wx, make_pen, force=False):
             HL_RGB   = _mix_rgb(day_cfg["hl"],   night_cfg["hl"],   k)
             _base_brightness = day_cfg["brightness"] + (night_cfg["brightness"] - day_cfg["brightness"]) * k
             _current_theme = "dusk"
-            return (make_pen(TIME_RGB), make_pen(HL_RGB), _base_brightness)
+            _ensure_pens(make_pen)
+            return (_TIME_PEN, _HL_PEN, _base_brightness)
 
     # Outside blend windows → snap to day/night
     if base_theme is None and sr_min is not None and ss_min is not None:
@@ -168,7 +187,8 @@ def update_theme(wx, make_pen, force=False):
     _base_brightness = cfg.get("brightness", 0.5)
     _current_theme = base_theme
 
-    return (make_pen(TIME_RGB), make_pen(HL_RGB), _base_brightness)
+    _ensure_pens(make_pen)
+    return (_TIME_PEN, _HL_PEN, _base_brightness)
 
 
 def base_brightness():

@@ -6,13 +6,14 @@ from display import clear, draw_text, update, text_width
 from config import LINE_HEIGHT, TEXT_SCALE, CTA_TOGGLE_MS, DISPLAY_WIDTH
 from cta_api import token3
 
-def draw_cta_toggle(cta_rows_data, now_ms, x_offset=0):
+def draw_cta_toggle(cta_rows_data, now_ms, x_offset=0, clear_first=True):
     """
     cta_rows_data: list of {"prefix": str, "pen": pen, "minutes": [tokens]}
     now_ms: ticks_ms() value for selecting which token to display
     x_offset: optional horizontal shift (for slide transition)
     """
-    clear()
+    if clear_first:
+        clear()
     y = 2
     idx = (now_ms // CTA_TOGGLE_MS)
     for row in cta_rows_data:

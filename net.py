@@ -73,17 +73,20 @@ def sync_clock(force=False, panic_if_bad=False):
     try:
         ntpclient.settime()
         _last_ntp_sync_ms = time.ticks_ms()
+        print("NTP sync complete")
+        return True
     except Exception:
         if panic_if_bad:
             # Retry multiple times if RTC is bad
-            for _ in range(3):
+            for _ in range(NTP_PANIC_MAX_TRIES):
                 try:
                     ntpclient.settime()
                     _last_ntp_sync_ms = time.ticks_ms()
-                    return
+                    print("NTP sync complete")
+                    return True
                 except Exception:
                     time.sleep(1)
-    print("NTP sync complete")
+        return False
 
 def ensure_wifi(
     ssid,
@@ -129,7 +132,7 @@ def ensure_wifi(
                 time.sleep(1.0)
                 break
 
-            _status_screen("WiFi", f"connecting {SPINNER_FRAMES[frame]}")
+            _status_screen("WiFi", f"{SPINNER_FRAMES[frame]}")
             frame = (frame + 1) % len(SPINNER_FRAMES)
             time.sleep(0.12)
 

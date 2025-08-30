@@ -6,13 +6,16 @@ import time
 import gc
 
 from config import (
-    CTA_API_KEY, ROWS, CTA_POLL_SECONDS,
+    ROWS, CTA_POLL_SECONDS,
     LAT, LON, TZ, WEATHER_POLL_SECONDS,
     WEATHER_SCREEN_SECONDS, CTA_SCREEN_SECONDS,
     TRANSITION_MS, FRAME_DELAY, CTA_BRIGHTNESS_FACTOR,
+    DISPLAY_WIDTH,
+    MORNING_WEATHER_START_HOUR, MORNING_WEATHER_END_HOUR, MORNING_WEATHER_MULTIPLIER,
 )
-from secrets import WIFI_SSID, WIFI_PASSWORD
 
+# not in git
+from lib.secrets import WIFI_SSID, WIFI_PASSWORD, CTA_API_KEY
 import net
 import display as disp
 from display import make_pen
@@ -74,7 +77,10 @@ def _apply_mode_brightness(current_mode, upcoming_mode=None, t_progress=1.0):
 def _build_cta_rows_data():
     rows = []
     for cfg in ROWS:
-        result = fetch_predictions(CTA_API_KEY, cfg["stpid"], cfg["rt"]) or {}
+        if not CTA_API_KEY:
+            result = {"error": "no key"}
+        else:
+            result = fetch_predictions(CTA_API_KEY, cfg["stpid"], cfg["rt"]) or {}
         if not result or "error" in result:
             mins = ["NOA"]
         else:
@@ -145,7 +151,15 @@ def main():
 
         # Rotate screens
         if mode == MODE_WEATHER:
-            if time.ticks_diff(now_ms, last_mode_switch_ms) >= WEATHER_SCREEN_SECONDS * 1000:
+            # Extend weather screen in the morning window
+            # Determine local hour using tz offset (from weather)
+            tz_off = weather_cache.get("tz_offset_seconds", 0) or 0
+            local_secs = time.time() + tz_off
+            hh = time.gmtime(local_secs)[3]
+            weather_secs = WEATHER_SCREEN_SECONDS
+            if MORNING_WEATHER_START_HOUR <= hh < MORNING_WEATHER_END_HOUR:
+                weather_secs = int(WEATHER_SCREEN_SECONDS * MORNING_WEATHER_MULTIPLIER)
+            if time.ticks_diff(now_ms, last_mode_switch_ms) >= weather_secs * 1000:
                 _set_transition(MODE_CTA, now_ms)
         elif mode == MODE_CTA:
             if time.ticks_diff(now_ms, last_mode_switch_ms) >= CTA_SCREEN_SECONDS * 1000:
@@ -188,19 +202,19 @@ def main():
                 progress = t / float(TRANSITION_MS)
                 _apply_mode_brightness(MODE_TRANSITION, upcoming_mode=next_mode, t_progress=progress)
 
-                # First half: keep drawing old screen; second half: draw new screen.
-                if progress < 0.5:
-                    if next_mode == MODE_CTA:
-                        # Currently on WEATHER
-                        draw_weather_static(time_pen, hl_pen, weather_cache.get("tz_offset_seconds", 0), weather_cache)
-                    else:
-                        # Currently on CTA
-                        draw_cta_toggle(cta_rows_data, now_ms)
+                # Slide transition: current screen moves left, next slides in from right
+                # Compute pixel offsets
+                offset = int(DISPLAY_WIDTH * progress)
+                if next_mode == MODE_CTA:
+                    # Weather -> CTA
+                    # Draw current (weather) shifted left
+                    draw_weather_static(time_pen, hl_pen, weather_cache.get("tz_offset_seconds", 0), weather_cache, x_offset=-offset, clear_first=True)
+                    # Draw next (CTA) coming in from right
+                    draw_cta_toggle(cta_rows_data, now_ms, x_offset=(DISPLAY_WIDTH - offset), clear_first=False)
                 else:
-                    if next_mode == MODE_CTA:
-                        draw_cta_toggle(cta_rows_data, now_ms)
-                    else:
-                        draw_weather_static(time_pen, hl_pen, weather_cache.get("tz_offset_seconds", 0), weather_cache)
+                    # CTA -> Weather
+                    draw_cta_toggle(cta_rows_data, now_ms, x_offset=-offset, clear_first=True)
+                    draw_weather_static(time_pen, hl_pen, weather_cache.get("tz_offset_seconds", 0), weather_cache, x_offset=(DISPLAY_WIDTH - offset), clear_first=False)
         else:
             if mode == MODE_WEATHER:
                 _apply_mode_brightness(MODE_WEATHER)
