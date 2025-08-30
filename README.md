@@ -1,6 +1,8 @@
-# LED Transit + Weather Display
+# Chicago Transit Authority Tracker + Weather LED Display
 
-A MicroPython app for Pimoroni Cosmic Unicorn (32x32 LED) that rotates between a weather screen and CTA bus arrival countdowns. It themes colors by day/night, syncs time via NTP, and handles Wi-Fi setup with a minimal on-device status UI.
+A MicroPython app for [Pimoroni Cosmic Unicorn](https://shop.pimoroni.com/products/space-unicorns?variant=40842626596947) (32x32 LED) that rotates between a weather screen and CTA bus arrival countdowns. It themes colors by day/night, syncs time via NTP, and handles Wi-Fi setup with a minimal on-device status UI.
+
+<img width="450" height="300" alt="image" src="https://github.com/user-attachments/assets/d6d5f419-46bd-4e84-ab16-2fccd476c1fe" />
 
 ## Features
 - Weather: local time, current temp (°F, colorized), hi/lo or condition
@@ -53,4 +55,6 @@ A MicroPython app for Pimoroni Cosmic Unicorn (32x32 LED) that rotates between a
 
 ## License
 This project is licensed under the [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+
 
