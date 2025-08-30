@@ -1,0 +1,10 @@
+{
+  "deviceFolder": "/",
+  "files": [
+    "*.py",
+    "lib/**"
+  ],
+  "mainFile": "main.py",
+  "autoUploadOnSave": true,
+  "syncOnUpload": true
+}
